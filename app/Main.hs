@@ -1,6 +1,6 @@
 module Main where
 
--- import Lib
+import Rom (loadROM)
 
 main :: IO ()
-main = putStrLn "Hello World."
+main = loadROM "test/roms/Legend of Zelda, The (Europe).nes"

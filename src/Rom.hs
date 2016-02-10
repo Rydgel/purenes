@@ -8,53 +8,59 @@ module Rom
     ) where
 
 import           Control.Applicative
-import           Data.Attoparsec.Binary
 import           Data.Attoparsec.ByteString
 import           Data.Bits
 import qualified Data.ByteString            as B
-import           Data.Serialize             (decode, encode)
-import           Data.Word                  (Word16, Word8)
+import           Data.Word                  (Word8)
 import           Prelude                    hiding (take)
 
 
 -- | The game region. Useful to adjust framerate
 -- among other things.
-data Region = NTSC | PAL
+data Region
+   = NTSC
+   | PAL
     deriving (Show)
 
-data Mirroring = Horizontal | Vertical | FourScreen
+data Mirroring
+   = Horizontal
+   | Vertical
+   | FourScreen
     deriving (Show)
 
 -- | This is the ROM file datatype.
 data ROMFile = ROMFile
-    { prgBanks    :: !Word16
-    , chrBanks    :: !Word16
+    { prgBanks    :: !Word8
+    , chrBanks    :: !Word8
     , mirroring   :: !Mirroring
     , battery     :: !Bool
     , trainer     :: !Bool
     , fourScreen  :: !Bool
     , vsCart      :: !Bool
-    , mapper      :: !Word8
+    , mapper      :: !Word8 -- ^ todo Mapper ADTs etc.
     , ramBanks    :: !Word8
     , regionFlag  :: !Region
     , trainerData :: !B.ByteString
-    , wramBanks   :: ![B.ByteString]
-    , romBanks    :: ![B.ByteString]
-    , vromBanks   :: ![B.ByteString]
+    , wramBanks   :: ![B.ByteString] -- ^ todo vectors
+    , romBanks    :: ![B.ByteString] -- ^ todo vectors
+    , vromBanks   :: ![B.ByteString] -- ^ todo vectors
     } deriving (Show)
 
 -- | A parser combinators function.
 parseROMFile :: Parser ROMFile
 parseROMFile = do
-    magic <- string "NES\x1a"
-    prg <- anyWord16le
-    chr <- anyWord16le
+    _ <- string "NES\x1a"
+    prg <- anyWord8
+    chr <- anyWord8
     c1 <- anyWord8
     c2 <- anyWord8
     ramb <- anyWord8
     region <- anyWord8
     _ <- take 6 -- ^ the padding
-    trainer <- parserTrainer $ trainerStatus c1
+    t <- parserTrainer $ trainerStatus c1
+    rom <- count (fromIntegral prg) (take 16384)
+    vrom <- count (fromIntegral chr) (take 8192)
+    wram <- count (fromIntegral ramb) (take 8192)
 
     return ROMFile
       { prgBanks = prg
@@ -67,21 +73,21 @@ parseROMFile = do
       , mapper = mapperStatus c1 c2
       , ramBanks = parseRamBanks ramb
       , regionFlag = parseRegion region
-      , trainerData = trainer
-      , wramBanks = []
-      , romBanks = []
-      , vromBanks = []
+      , trainerData = t
+      , wramBanks = wram
+      , romBanks = rom
+      , vromBanks = vrom
       }
 
 parserTrainer :: Bool -> Parser B.ByteString
-parserTrainer True = take 512
+parserTrainer True  = take 512
 parserTrainer False = pure ""
 
 mirroringStatus :: Word8 -> Mirroring
 mirroringStatus c1
-    | c1 .&. 0x01 /= 0x00 = Vertical
-    | c1 .&. 0x08 /= 0x00 = FourScreen
-    | otherwise           = Horizontal
+  | c1 .&. 0x01 /= 0x00 = Vertical
+  | c1 .&. 0x08 /= 0x00 = FourScreen
+  | otherwise           = Horizontal
 
 -- | Get battery status from the two control bits.
 batteryStatus :: Word8  -> Bool
@@ -105,9 +111,14 @@ parseRamBanks w    = w
 
 parseRegion :: Word8 -> Region
 parseRegion w
-    | w .&. 0x01 /= 0x00 = PAL
-    | otherwise          = NTSC
+  | w .&. 0x01 /= 0x00 = PAL
+  | otherwise          = NTSC
 
 -- | This function loads a .nes file into memory.
-loadROM :: String -> IO ROMFile
-loadROM = undefined
+-- loadROM :: String -> IO ROMFile
+loadROM :: String -> IO ()
+loadROM path = do
+    fileStr <- B.readFile path
+    case parseOnly parseROMFile fileStr of
+      Left e -> print e -- parsing error
+      Right is -> print is
