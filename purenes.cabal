@@ -22,6 +22,7 @@ library
                      , attoparsec
                      , attoparsec-binary
                      , vector
+                     , lens
   default-language:    Haskell2010
 
 executable purenes-exe

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Rom
     ( Region
@@ -14,6 +15,7 @@ import qualified Data.ByteString            as B
 import qualified Data.Vector                as V
 import           Data.Word                  (Word8)
 import           Prelude                    hiding (take)
+import           Control.Lens
 
 
 -- | The game region. Useful to adjust framerate
@@ -31,21 +33,25 @@ data Mirroring
 
 -- | This is the ROM file datatype.
 data ROMFile = ROMFile
-    { prgBanks    :: !Word8
-    , chrBanks    :: !Word8
-    , mirroring   :: !Mirroring
-    , battery     :: !Bool
-    , trainer     :: !Bool
-    , fourScreen  :: !Bool
-    , vsCart      :: !Bool
-    , mapper      :: !Word8 -- ^ todo Mapper ADTs etc.
-    , ramBanks    :: !Word8
-    , regionFlag  :: !Region
-    , trainerData :: !B.ByteString
-    , wramBanks   :: !(V.Vector B.ByteString)
-    , romBanks    :: !(V.Vector B.ByteString)
-    , vromBanks   :: !(V.Vector B.ByteString)
+    { _prgBanks    :: !Word8
+    , _chrBanks    :: !Word8
+    , _mirroring   :: !Mirroring
+    , _battery     :: !Bool
+    , _trainer     :: !Bool
+    , _fourScreen  :: !Bool
+    , _vsCart      :: !Bool
+    , _mapper      :: !Word8 -- ^ todo Mapper ADTs etc.
+    , _ramBanks    :: !Word8
+    , _regionFlag  :: !Region
+    , _trainerData :: !B.ByteString
+    , _wramBanks   :: !(V.Vector B.ByteString)
+    , _romBanks    :: !(V.Vector B.ByteString)
+    , _vromBanks   :: !(V.Vector B.ByteString)
     } deriving (Show)
+
+
+makeLenses ''ROMFile
+
 
 -- | A parser combinators function.
 parseROMFile :: Parser ROMFile
@@ -64,20 +70,20 @@ parseROMFile = do
     wram <- count (fromIntegral ramb) (take 8192)
 
     return ROMFile
-      { prgBanks = prg
-      , chrBanks = chr
-      , mirroring = mirroringStatus c1
-      , battery = batteryStatus c1
-      , trainer = trainerStatus c1
-      , fourScreen = fourScreenStatus c1
-      , vsCart = vsCartStatus c1
-      , mapper = mapperStatus c1 c2
-      , ramBanks = parseRamBanks ramb
-      , regionFlag = parseRegion region
-      , trainerData = t
-      , wramBanks = V.fromList wram
-      , romBanks = V.fromList rom
-      , vromBanks = V.fromList vrom
+      { _prgBanks = prg
+      , _chrBanks = chr
+      , _mirroring = mirroringStatus c1
+      , _battery = batteryStatus c1
+      , _trainer = trainerStatus c1
+      , _fourScreen = fourScreenStatus c1
+      , _vsCart = vsCartStatus c1
+      , _mapper = mapperStatus c1 c2
+      , _ramBanks = parseRamBanks ramb
+      , _regionFlag = parseRegion region
+      , _trainerData = t
+      , _wramBanks = V.fromList wram
+      , _romBanks = V.fromList rom
+      , _vromBanks = V.fromList vrom
       }
 
 parserTrainer :: Bool -> Parser B.ByteString
