@@ -11,6 +11,7 @@ import           Control.Applicative
 import           Data.Attoparsec.ByteString
 import           Data.Bits
 import qualified Data.ByteString            as B
+import qualified Data.Vector                as V
 import           Data.Word                  (Word8)
 import           Prelude                    hiding (take)
 
@@ -41,9 +42,9 @@ data ROMFile = ROMFile
     , ramBanks    :: !Word8
     , regionFlag  :: !Region
     , trainerData :: !B.ByteString
-    , wramBanks   :: ![B.ByteString] -- ^ todo vectors
-    , romBanks    :: ![B.ByteString] -- ^ todo vectors
-    , vromBanks   :: ![B.ByteString] -- ^ todo vectors
+    , wramBanks   :: !(V.Vector B.ByteString)
+    , romBanks    :: !(V.Vector B.ByteString)
+    , vromBanks   :: !(V.Vector B.ByteString)
     } deriving (Show)
 
 -- | A parser combinators function.
@@ -74,9 +75,9 @@ parseROMFile = do
       , ramBanks = parseRamBanks ramb
       , regionFlag = parseRegion region
       , trainerData = t
-      , wramBanks = wram
-      , romBanks = rom
-      , vromBanks = vrom
+      , wramBanks = V.fromList wram
+      , romBanks = V.fromList rom
+      , vromBanks = V.fromList vrom
       }
 
 parserTrainer :: Bool -> Parser B.ByteString
