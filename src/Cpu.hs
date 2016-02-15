@@ -26,7 +26,7 @@ data CpuEnv = CpuEnv
     , _v         :: Word8  -- ^ overflow flag
     , _n         :: Word8  -- ^ negative flag
     , _interrupt :: Word8  -- ^ interrupt type to perform
-    , stall      :: Int    -- ^ number of cycle to stall
+    , _stall     :: Int    -- ^ number of cycle to stall
     }
 
 makeLenses ''CpuEnv
