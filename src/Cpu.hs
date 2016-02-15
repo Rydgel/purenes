@@ -1,7 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module CPU
-    (
+module Cpu
+    ( Cpu
+    , CpuEnv
+    , resetCpu
+    , initCpu
     ) where
 
 import           Control.Lens
@@ -27,23 +30,33 @@ data CpuEnv = CpuEnv
     , _n         :: Word8  -- ^ negative flag
     , _interrupt :: Word8  -- ^ interrupt type to perform
     , _stall     :: Int    -- ^ number of cycle to stall
-    }
+    } deriving (Show)
 
 makeLenses ''CpuEnv
 
-type CPU = State CpuEnv ()
+type Cpu = State CpuEnv ()
 
+
+-- | Init the Cpu variables.
+initCpu :: CpuEnv
+initCpu = CpuEnv 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 
 -- | Set the CPU at the state when the console is
 -- powered-up.
-resetCpu :: CPU
+resetCpu :: Cpu
 resetCpu = do
+    cycles .= 0
+    x .= 0x00
+    y .= 0x00
+    a .= 0x00
     pc .= 0xFFFC
     sp .= 0xFD
     setFlags 0x24
+    interrupt .= 0x00
+    stall .= 0
 
 -- | Set the CPU flags to the powered-up state.
-setFlags :: Word8 -> CPU
+setFlags :: Word8 -> Cpu
 setFlags flags = do
     c .= (flags `shiftR` 0) .&. 1
     z .= (flags `shiftR` 1) .&. 1
